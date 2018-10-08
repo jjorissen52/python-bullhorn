@@ -26,8 +26,7 @@ class BullhornClient(BullhornAuthClient):
         print(self.auth_details)
 
     @execution_pipeline(pre=[pre.keep_authenticated, pre.clean_api_call_input], cache=cache)
-    def api_call(self, command=None, method=None, entity=None, entity_id=None,
-                 select_fields="*", query=None, body='', **kwargs):
+    def api_call(self, command=None, method=None, entity=None, entity_id=None, select_fields="*", **kwargs):
         """
         :param command: (str) command that bullhorn accepts (see bullhorn api reference material)
         :param method: (str) HTTP verbs telling the API how you want to interact with the data ("GET", "POST", "UPDATE", "DELETE)
@@ -42,15 +41,20 @@ class BullhornClient(BullhornAuthClient):
         :return: hopefully a dict with the key "data" with a  list of the searched, queried, added, or updated data
         """
         url = f"{self.auth_details['rest_url']}{command}/{entity}{kwargs['entity_id_str']}"
-        print(url)
+        # print(url)
         params = {
             "BhRestToken": self.auth_details['bh_rest_token'],
         }
         if select_fields:
             params.update({"fields": select_fields})
-        if query:
-            params.update({"query": query})
         for key in kwargs.keys():
             params.update({key: kwargs[key]})
+        body = kwargs.get('body', '')
         response = self.methods[method.upper()](url, json=body, params=params, timeout=self.global_timeout)
         return response
+
+    @execution_pipeline(pre=[pre.clean_api_search_input], cache=cache)
+    def search(self, entity=None, select_fields="*", query=None, start=None, count=None, sort=None):
+        return self.api_call(command="search", entity=entity, method="GET", select_fields=select_fields, query=query,
+                             start=start, count=count, sort=sort)
+

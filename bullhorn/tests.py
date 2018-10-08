@@ -1,3 +1,4 @@
+import itertools
 import json
 import unittest
 
@@ -21,6 +22,14 @@ class TestPipelineMethods(unittest.TestCase):
             @execution_pipeline(pre=[pre.clean_api_call_input])
             def fake_method1(self, **kwargs):
                 return kwargs
+
+            @execution_pipeline(pre=[pre.clean_api_search_input])
+            def fake_method2(self, **kwargs):
+                return kwargs
+
+            @execution_pipeline(pre=[pre.clean_api_search_input])
+            def fake_method3(self, **kwargs):
+                return self.fake_method1(**kwargs)
 
         cls._test_client = A()
 
@@ -51,6 +60,20 @@ class TestPipelineMethods(unittest.TestCase):
         for required in required_params:
             self.assertIn(required, resulting_params.keys())
 
+    def test_api_search_input(self):
+        with self.assertRaises(exceptions.APICallError):
+            kwargs = [{'entity': 'billy'}, {'query': 'id>=0'}, {'select_fields': 'lastName'}]
+            for i in [1, 2]:
+                for combo in itertools.combinations(kwargs, i):
+                    temp_kwargs = combo[0]
+                    for kwarg in combo[1:]:
+                        temp_kwargs.update(kwarg)
+                    self._test_client.fake_method2(**temp_kwargs)
+        temp_kwargs = kwargs[0]
+        for kwarg in kwargs[1:]:
+            temp_kwargs.update(kwarg)
+        self._test_client.fake_method2(**temp_kwargs)
+
 
 class TestAPICall(unittest.TestCase):
 
@@ -58,6 +81,13 @@ class TestAPICall(unittest.TestCase):
         b = BullhornClient()
         response = b.api_call(command='entity', method='GET', entity='Candidate', entity_id=42419)
         response = b.api_call(command='entity', method='GET', entity='Candidate', entity_id=42419, LastName='Okay')
+        self.assertEqual(response.status_code, 200)
+        response_dict = json.loads(response.text)
+        self.assertIn('data', response_dict)
+
+    def test_search(self):
+        b = BullhornClient()
+        response = b.search('Candidate', query="id>=0")
         self.assertEqual(response.status_code, 200)
         response_dict = json.loads(response.text)
         self.assertIn('data', response_dict)
