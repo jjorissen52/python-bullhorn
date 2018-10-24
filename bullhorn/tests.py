@@ -2,8 +2,10 @@ import itertools
 import json
 import unittest
 
+from pipeline import execution_pipeline
+
 from bullhorn.api import BullhornClient
-from bullhorn.pipeline import execution_pipeline, pre
+from bullhorn.pipeline_methods import pre
 from bullhorn.api import exceptions
 
 

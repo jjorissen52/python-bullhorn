@@ -3,10 +3,13 @@ import time
 import requests
 import json
 
-from bullhorn import settings
-from bullhorn.cache import cache
-from bullhorn.pipeline import execution_pipeline, pre, post, error
+from pipeline import execution_pipeline
+
+from bullhorn.pipeline_methods import error, post
 from bullhorn.api.exceptions import APIAuthError
+
+from bullhorn import settings
+from bullhorn import cache
 
 
 class BullhornAuthClient:
